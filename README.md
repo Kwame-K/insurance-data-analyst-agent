@@ -4,7 +4,7 @@
 
 A controlled, deterministic, and auditable agent for insurance portfolio analytics.
 
-The project accepts selected analytical questions in English or French, routes each request to an allow-listed analytical tool, executes deterministic Python and SQLite calculations, optionally produces a chart, and persists a JSON audit artifact for every successful or failed run.
+The project accepts selected analytical questions in English or French, routes each request to an allow-listed analytical tool, executes deterministic Python and SQLite calculations, optionally produces a chart, and persists a JSON audit artifact for every successful or failed run. It is Project 2 in a five-project insurance agentic AI portfolio.
 
 ## Highlights
 
@@ -77,6 +77,8 @@ Optional Matplotlib chart
 Persistent JSON audit artifact
 ```
 
+For a detailed architecture description, component responsibilities, sequence diagrams, evaluation flow, and future extensibility, see [System Architecture](docs/architecture/system-architecture_updated.md).
+
 ## Safety model
 
 ### Controlled tool selection
@@ -93,9 +95,7 @@ A request cannot select an arbitrary Python function, shell command, file path, 
 
 ### No free-form SQL
 
-The user and the LLM never submit SQL directly to SQLite.
-
-The implementation uses fixed SQL templates with:
+The user and the LLM never submit SQL directly to SQLite. The implementation uses fixed SQL templates with:
 
 - Allow-listed grouping dimensions
 - Parameterized value filters
@@ -141,11 +141,13 @@ insurance-data-analyst-agent/
 │       └── ci.yml
 ├── data/
 │   └── insurance_portfolio.db
+├── docs/
+│   └── architecture/
+│       ├── evaluation-baseline.md
+│       └── system-architecture.md
 ├── output/
 │   ├── audits/
-│   │   └── .gitkeep
 │   └── charts/
-│       └── .gitkeep
 ├── src/
 │   └── insurance_data_analyst_agent/
 │       ├── charts.py
@@ -170,17 +172,19 @@ insurance-data-analyst-agent/
 │       ├── synthetic_data/
 │       │   └── generator.py
 │       └── tools/
+│           ├── base.py
 │           ├── loss_ratio.py
 │           └── registry.py
 ├── tests/
 │   ├── evaluations/
-│   │   ├── cases.json
 │   │   └── test_router_evaluations.py
+│   ├── conftest.py
 │   ├── test_agent.py
 │   ├── test_audit_writer.py
 │   ├── test_charts.py
 │   ├── test_cli.py
 │   ├── test_database.py
+│   ├── test_generator.py
 │   ├── test_groq_client.py
 │   ├── test_llm_router.py
 │   ├── test_loss_ratio.py
@@ -188,11 +192,8 @@ insurance-data-analyst-agent/
 │   └── test_router.py
 ├── .env.example
 ├── pyproject.toml
-├── uv.lock
-└── README.md
+└── uv.lock
 ```
-
-For a detailed architecture description, component responsibilities, sequence diagrams, evaluation flow, and future underwriting workflow, see [System Architecture](docs/architecture/system-architecture.md).
 
 ## Installation
 
@@ -211,8 +212,6 @@ uv sync
 ```
 
 ### Configure local settings
-
-Create your local environment file:
 
 ```bash
 cp .env.example .env
@@ -252,23 +251,17 @@ uv run insurance-data-analyst init-data \
 
 ```bash
 uv run insurance-data-analyst loss-ratio \
-  --year 2023 \
-  --year 2024 \
-  --year 2025
+  --year 2023 --year 2024 --year 2025
 ```
 
 Filter by province and line of business:
 
 ```bash
 uv run insurance-data-analyst loss-ratio \
-  --year 2025 \
-  --province QC \
-  --line-of-business commercial_property
+  --year 2025 --province QC --line-of-business commercial_property
 ```
 
 ### Natural-language analysis: deterministic router
-
-The deterministic router is the default and requires no API key:
 
 ```bash
 uv run insurance-data-analyst ask \
@@ -283,8 +276,6 @@ uv run insurance-data-analyst ask \
 ```
 
 ### Natural-language analysis: Groq router
-
-Configure `GROQ_API_KEY` and `GROQ_MODEL` in `.env`, then run:
 
 ```bash
 uv run insurance-data-analyst ask \
@@ -303,11 +294,7 @@ uv run insurance-data-analyst ask \
   --chart-output output/charts/loss-ratio-by-segment.png
 ```
 
-This command produces:
-
-- A JSON response in standard output
-- A PNG grouped-bar chart at the requested output path
-- A persistent JSON audit artifact in `output/audits/`
+This command produces a JSON response in standard output, a PNG grouped-bar chart at the requested output path, and a persistent JSON audit artifact in `output/audits/`.
 
 ## Example response
 
@@ -319,11 +306,7 @@ This command produces:
       "tool_name": "get_loss_ratio_by_segment",
       "validated_arguments": {
         "underwriting_years": [2025],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
+        "dimensions": ["province", "line_of_business", "underwriting_year"],
         "provinces": ["QC"],
         "lines_of_business": ["commercial_property"]
       },
@@ -355,29 +338,11 @@ The numeric values above are illustrative. Actual values depend on the seed used
 
 ## Audit artifacts
 
-Every `agent.answer()` execution persists a versioned JSON file in:
+Every `agent.answer()` execution persists a versioned JSON file in `output/audits/`.
 
-```text
-output/audits/
-```
+A successful audit contains: `run_id`, UTC timestamp, agent version, dataset version, database path, user question, tool name and validated arguments, raw results, final structured response.
 
-A successful audit contains:
-
-- `run_id`
-- UTC timestamp
-- Agent version
-- Dataset version
-- Database path
-- User question
-- Tool name and validated arguments
-- Raw results
-- Final structured response
-
-A failed audit additionally captures:
-
-- Error type
-- Error message
-- Any selected tool and validated arguments available before failure
+A failed audit additionally captures: error type, error message, any selected tool and validated arguments available before failure.
 
 Inspect the latest audit file:
 
@@ -393,21 +358,9 @@ ls -lh output/charts
 
 ## Testing and quality checks
 
-Format code:
-
 ```bash
 uv run ruff format src tests
-```
-
-Run linting:
-
-```bash
 uv run ruff check src tests
-```
-
-Run all tests:
-
-```bash
 uv run pytest -v
 ```
 
@@ -428,21 +381,7 @@ uv run pytest tests/evaluations -v
 
 ## Continuous integration
 
-GitHub Actions runs on each push and pull request:
-
-```text
-uv sync --locked
-ruff format --check
-ruff check
-pytest
-coverage >= 80%
-```
-
-The CI workflow is defined in:
-
-```text
-.github/workflows/ci.yml
-```
+GitHub Actions runs `uv sync --locked`, `ruff format --check`, `ruff check`, `pytest`, and a coverage threshold check on each push and pull request, defined in `.github/workflows/ci.yml`.
 
 ## Metric definitions
 
@@ -458,20 +397,17 @@ The CI workflow is defined in:
 
 ## Known limitations
 
-This is a portfolio and learning project using synthetic data. It is not a production underwriting, claims, or actuarial system.
-
-- Only paid loss ratio is supported in V1
-- Written premium is used instead of earned premium
-- Claims contain paid amounts only; case reserves and incurred losses are not modeled
-- Accident-year and calendar-year views are not implemented
-- Development triangles and reserving calculations are out of scope
-- The natural-language vocabulary is intentionally limited
-- Only QC, ON, BC and AB are available as province filters
-- Only commercial property, commercial auto and general liability are available as lines of business
-- Only grouped-bar charts are generated in V1
-- Groq is optional and requires a local API key and model configuration
-- No authentication, authorization, production database, or real policyholder data is included
-- No personal, claims, broker, or commercially sensitive data is used
+- Only paid loss ratio is supported in V1.
+- Written premium is used instead of earned premium.
+- Claims contain paid amounts only; case reserves and incurred losses are not modeled.
+- Accident-year and calendar-year views are not implemented.
+- Development triangles and reserving calculations are out of scope.
+- The natural-language vocabulary is intentionally limited.
+- Only QC, ON, BC and AB are available as province filters.
+- Only commercial property, commercial auto and general liability are available as lines of business.
+- Only grouped-bar charts are generated in V1.
+- Groq is optional and requires a local API key and model configuration.
+- No authentication, authorization, production database, or real policyholder data is included.
 
 ## Roadmap
 
@@ -494,11 +430,43 @@ This is a portfolio and learning project using synthetic data. It is not a produ
 - Add earned premium, incurred loss and reserving-oriented metrics
 - Add CI badges, release automation and package publishing
 
-## License
+## Position in the Insurance Agentic Platform
 
-License to be defined.
+This project is Project 2 of a five-project portfolio:
 
-## Author
+| Project | Repository | Role |
+|---|---|---|
+| 1 | insurance-submission-extractor | Structured submission intake and validation |
+| 2 | insurance-data-analyst-agent (this repo) | Controlled portfolio analytics (loss ratio, deterministic SQL) |
+| 3 | insurance-rag-assistant | Insurance Knowledge Agent with grounded, cited retrieval |
+| 4 | underwriting-agent | Deterministic underwriting rules, risk scoring, pricing, and evidence retrieval |
+| — | insurance-agentic-platform | Docker Compose orchestration layer for the running services |
 
-Kwame Kristian Laban  
-Data Science and Insurance Analytics Portfolio
+## Recommended Technology Upgrades
+
+| Area | Current | Recommended | Benefit |
+|---|---|---|---|
+| Observability | No tracing | Langfuse or OpenTelemetry around `agent.answer()` | Full visibility into router decisions, LLM fallback triggers, and cost |
+| Persistence | SQLite file, flat JSON audits | PostgreSQL with SQLAlchemy 2.0 async | Shared, queryable audit history with Project 1 and future services |
+| API layer | CLI only | FastAPI endpoint wrapping `InsuranceDataAnalystAgent` (already planned for V2) | Enables integration with Underwriting Agent and platform orchestration |
+| Routing validation | Manual Pydantic + deterministic fallback | Pydantic AI or constrained decoding for tool selection | Reduces invalid LLM JSON before it reaches the fallback path |
+| Evaluation | Field comparison via router evaluation cases | Add LLM-as-a-judge scoring for natural-language coverage gaps | Detects vocabulary gaps beyond the fixed evaluation set |
+| Visualization | Matplotlib static PNG only | Add Plotly for interactive charts in a future Streamlit UI | Supports the planned V2 analytics UI with richer interactivity |
+
+## Improvements and Next Steps
+
+1. Deliver the V1.1 tools (`get_claim_frequency_trend`, `get_exposure_summary`, `get_portfolio_quality_metrics`) with calculation-integrity tests, matching the extensibility checklist already defined in the architecture doc.
+2. Add a Google Gemini adapter implementing `LLMClient` to reduce single-provider dependency on Groq.
+3. Instrument `agent.answer()` with tracing (Langfuse or OpenTelemetry) to capture router mode, fallback triggers, and execution latency per run.
+4. Migrate audit storage from flat JSON files to PostgreSQL to enable cross-project analytics with Project 1's extraction audits.
+5. Expand the router evaluation set with additional French vocabulary and edge-case rejections to harden the deterministic router before scaling the allow-list.
+6. Build the FastAPI endpoint planned for V2 so the agent can be called directly by the Underwriting Agent (Project 4) instead of only through the CLI.
+
+## Agentic AI Best Practices Applied Here
+
+- **Allow-listed tool execution**: the agent can only call `get_loss_ratio_by_segment`; no arbitrary function, SQL, or shell command can be reached from user or LLM input — a foundational guardrail for any tool-using agent.
+- **LLM as an untrusted proposer, not an executor**: the LLM only proposes a `ToolSelection`; every field is revalidated before execution, and any invalid or unavailable output triggers deterministic fallback rather than a best-effort guess.
+- **Deterministic calculation core**: financial metrics are never computed by the model itself, keeping numeric outputs reproducible and auditable.
+- **Fail-safe over fail-open**: when neither the LLM route nor the deterministic route can answer a question, the system returns a controlled error instead of fabricating a response.
+- **Full-run auditability**: every execution, successful or failed, is persisted with inputs, validated arguments, raw results, and errors — a pattern directly aligned with 2026 production-agent guidance on replayable, inspectable agent runs.
+- **Next practice to adopt**: expose this agent as an MCP-compatible tool so the Underwriting Agent or a future orchestrator can invoke `get_loss_ratio_by_segment` through a standardized tool contract instead of a CLI wrapper.

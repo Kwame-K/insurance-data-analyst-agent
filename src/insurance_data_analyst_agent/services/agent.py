@@ -88,7 +88,12 @@ class InsuranceDataAnalystAgent:
                 database_path=self.database_path,
                 dataset_version=self.dataset_version,
             )
-            if chart_output_path is not None and response.chart is not None:
+
+            if (
+                chart_output_path is not None
+                and response.chart is not None
+                and raw_results
+            ):
                 generated_chart_path = generate_chart(
                     raw_results=raw_results,
                     metadata=response.chart,

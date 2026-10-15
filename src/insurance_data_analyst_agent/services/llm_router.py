@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from pydantic import ValidationError
@@ -11,6 +12,7 @@ from insurance_data_analyst_agent.llm.base import (
 from insurance_data_analyst_agent.llm.prompts import (
     TOOL_SELECTION_SYSTEM_PROMPT,
 )
+from insurance_data_analyst_agent.llm.trace import routing_provider_var
 from insurance_data_analyst_agent.models.analytics import (
     Dimension,
 )
@@ -20,6 +22,8 @@ from insurance_data_analyst_agent.models.routing import (
 from insurance_data_analyst_agent.services.router import (
     route_question,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -34,6 +38,8 @@ class LLMRouter:
         available_years: list[int],
     ) -> ToolSelection:
         """Return LLM selection when valid, otherwise use fallback routing."""
+        routing_provider_var.set("deterministic")
+
         try:
             raw_selection = self.client.generate_tool_selection(
                 system_prompt=TOOL_SELECTION_SYSTEM_PROMPT,
@@ -54,7 +60,13 @@ class LLMRouter:
             ValidationError,
             ValueError,
             TypeError,
-        ):
+        ) as error:
+            logger.warning(
+                "LLM routing failed, using deterministic fallback: %s",
+                error,
+            )
+            routing_provider_var.set("deterministic")
+
             return route_question(
                 question=question,
                 available_years=available_years,

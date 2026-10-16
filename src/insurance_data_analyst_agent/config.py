@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     database_path: Path = Path("data/insurance_portfolio.db")
     database_url: str | None = None
+    database_echo: bool = False
+
     dataset_version: str = "synthetic-v1"
     audit_directory: Path = Path("output/audits")
     chart_directory: Path = Path("output/charts")

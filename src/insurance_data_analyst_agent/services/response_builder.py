@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
+from insurance_data_analyst_agent.infrastructure.persistence.access import (
+    DataSource,
+    describe_data_source,
+)
 from insurance_data_analyst_agent.models.analytics import (
     AnalyticsResponse,
     AuditMetadata,
@@ -17,7 +20,7 @@ def build_loss_ratio_response(
     question: str,
     request: LossRatioRequest,
     raw_results: list[dict[str, Any]],
-    database_path: Path,
+    database_path: DataSource,
     dataset_version: str,
 ) -> AnalyticsResponse:
     if not raw_results:
@@ -74,6 +77,6 @@ def build_loss_ratio_response(
             calculation_definition=(
                 "paid_loss_ratio = paid_claim_amount / written_premium"
             ),
-            database_path=str(database_path),
+            database_path=describe_data_source(database_path),
         ),
     )

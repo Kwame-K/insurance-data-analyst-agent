@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 
 from insurance_data_analyst_agent.api.errors import register_exception_handlers
 from insurance_data_analyst_agent.api.schemas import AnalyzeRequest
@@ -25,6 +26,10 @@ def build_client() -> TestClient:
     @app.get("/boom")
     def boom() -> None:
         raise RuntimeError("secret internal detail")
+
+    @app.get("/db-down")
+    def db_down() -> None:
+        raise OperationalError("SELECT 1", {}, Exception("password=secret host=db"))
 
     return TestClient(app, raise_server_exceptions=False)
 
@@ -68,3 +73,11 @@ def test_unknown_route_uses_error_contract() -> None:
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "http_error"
+
+
+def test_database_operational_error_returns_503_without_leak() -> None:
+    response = build_client().get("/db-down")
+
+    assert response.status_code == 503
+    assert "secret" not in response.text
+    assert response.json()["error"]["code"] == "data_unavailable"

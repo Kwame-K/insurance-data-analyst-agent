@@ -16,6 +16,24 @@ jobs:
     name: Quality and tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: analyst_app
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: analyst_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U analyst_app -d analyst_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://analyst_app:ci_password@localhost:5432/analyst_test
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -5,8 +5,13 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 import typer
+from sqlalchemy.engine import make_url
 
 from insurance_data_analyst_agent.config import settings
+from insurance_data_analyst_agent.infrastructure.persistence.database import (
+    create_database_engine,
+    run_migrations,
+)
 from insurance_data_analyst_agent.llm.groq_client import (
     GroqLLMClient,
 )
@@ -33,6 +38,7 @@ from insurance_data_analyst_agent.services.router import (
 from insurance_data_analyst_agent.synthetic_data.generator import (
     create_synthetic_database,
 )
+from insurance_data_analyst_agent.synthetic_data.loader import load_synthetic_data
 from insurance_data_analyst_agent.tools.loss_ratio import (
     get_loss_ratio_by_segment,
 )
@@ -150,6 +156,33 @@ def init_data(
             {
                 "status": "success",
                 "database_path": str(database_path),
+                "seed": seed,
+                "dataset_version": settings.dataset_version,
+            },
+            indent=2,
+        )
+    )
+
+
+@app.command("init-db")
+def init_db(seed: SeedOption = 20260904) -> None:
+    """Apply Alembic migrations and load synthetic data into DATABASE_URL."""
+    if not settings.database_url:
+        raise typer.BadParameter("DATABASE_URL is required for init-db.")
+
+    run_migrations(settings.database_url)
+
+    engine = create_database_engine(settings.database_url)
+    try:
+        load_synthetic_data(engine, seed=seed)
+    finally:
+        engine.dispose()
+
+    typer.echo(
+        json.dumps(
+            {
+                "status": "success",
+                "backend": make_url(settings.database_url).get_backend_name(),
                 "seed": seed,
                 "dataset_version": settings.dataset_version,
             },

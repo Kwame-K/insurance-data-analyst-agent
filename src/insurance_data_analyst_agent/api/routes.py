@@ -12,6 +12,7 @@ from insurance_data_analyst_agent.api.schemas import (
     LossRatioApiRequest,
 )
 from insurance_data_analyst_agent.config import Settings
+from insurance_data_analyst_agent.infrastructure.persistence.access import DataSource
 from insurance_data_analyst_agent.llm.trace import routing_provider_var
 from insurance_data_analyst_agent.models.analytics import LossRatioRequest
 from insurance_data_analyst_agent.models.routing import ToolSelection
@@ -45,10 +46,11 @@ def fixed_router(arguments: LossRatioRequest) -> QuestionRouter:
 
 def build_agent(
     settings: Settings,
+    data_source: DataSource,
     router: QuestionRouter,
 ) -> InsuranceDataAnalystAgent:
     return InsuranceDataAnalystAgent(
-        database_path=settings.database_path,
+        database_path=data_source,
         dataset_version=settings.dataset_version,
         registry=build_default_tool_registry(),
         audit_writer=AuditWriter(output_directory=settings.audit_directory),
@@ -86,7 +88,9 @@ def analyze(payload: AnalyzeRequest, request: Request) -> ApiResponse:
 
     routing_provider_var.set("deterministic")
 
-    agent = build_agent(settings, request.app.state.router)
+    agent = build_agent(
+        settings, request.app.state.data_source, request.app.state.router
+    )
     response = agent.answer(
         question=payload.question,
         chart_output_path=chart_path_for(
@@ -110,7 +114,9 @@ def loss_ratio(payload: LossRatioApiRequest, request: Request) -> ApiResponse:
     correlation_id: str = request.state.correlation_id
     request_id = bind_request_id(request, payload.request_id)
 
-    agent = build_agent(settings, fixed_router(payload.arguments))
+    agent = build_agent(
+        settings, request.app.state.data_source, fixed_router(payload.arguments)
+    )
     response = agent.answer(
         question="Direct call: get_loss_ratio_by_segment",
         chart_output_path=chart_path_for(

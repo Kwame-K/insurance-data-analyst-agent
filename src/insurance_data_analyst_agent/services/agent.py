@@ -8,6 +8,10 @@ from insurance_data_analyst_agent.charts import generate_chart
 from insurance_data_analyst_agent.database import (
     get_available_underwriting_years,
 )
+from insurance_data_analyst_agent.infrastructure.persistence.access import (
+    DataSource,
+    describe_data_source,
+)
 from insurance_data_analyst_agent.models.analytics import (
     AnalyticsResponse,
     ToolCallAudit,
@@ -42,7 +46,7 @@ QuestionRouter = Callable[
 class InsuranceDataAnalystAgent:
     """Controlled and deterministic insurance portfolio analytics agent."""
 
-    database_path: Path
+    database_path: DataSource
     dataset_version: str
     registry: ToolRegistry
     audit_writer: AuditWriter
@@ -106,7 +110,7 @@ class InsuranceDataAnalystAgent:
                 AgentRunAudit(
                     agent_version=self.agent_version,
                     dataset_version=self.dataset_version,
-                    database_path=str(self.database_path),
+                    database_path=describe_data_source(self.database_path),
                     question=question,
                     status="success",
                     tool_calls=tool_calls,
@@ -122,7 +126,7 @@ class InsuranceDataAnalystAgent:
                 AgentRunAudit(
                     agent_version=self.agent_version,
                     dataset_version=self.dataset_version,
-                    database_path=str(self.database_path),
+                    database_path=describe_data_source(self.database_path),
                     question=question,
                     status="failed",
                     tool_calls=tool_calls,

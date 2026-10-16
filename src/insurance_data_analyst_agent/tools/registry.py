@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
+from insurance_data_analyst_agent.infrastructure.persistence.access import DataSource
 from insurance_data_analyst_agent.models.analytics import (
     LossRatioRequest,
 )
@@ -14,7 +14,7 @@ from insurance_data_analyst_agent.tools.loss_ratio import (
 )
 
 ToolHandler = Callable[
-    [Path, LossRatioRequest],
+    [DataSource, LossRatioRequest],
     list[dict[str, Any]],
 ]
 
@@ -59,7 +59,7 @@ class ToolRegistry:
     def execute(
         self,
         selection: ToolSelection,
-        database_path: Path,
+        database_path: DataSource,
     ) -> list[dict[str, Any]]:
         """Execute the handler associated with a validated selection."""
         tool = self.get(selection.tool_name)

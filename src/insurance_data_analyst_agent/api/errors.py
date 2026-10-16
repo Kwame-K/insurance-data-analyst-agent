@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from insurance_data_analyst_agent.api.schemas import (
@@ -59,7 +60,7 @@ async def unsupported_question_handler(
 
 
 async def data_unavailable_handler(
-    request: Request, exc: FileNotFoundError
+    request: Request, exc: FileNotFoundError | OperationalError
 ) -> JSONResponse:
     logger.exception("Data source unavailable")
     return _error_response(
@@ -83,5 +84,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(UnsupportedQuestionError, unsupported_question_handler)
     app.add_exception_handler(FileNotFoundError, data_unavailable_handler)
+    app.add_exception_handler(OperationalError, data_unavailable_handler)
     app.add_exception_handler(StarletteHTTPException, http_error_handler)
     app.add_exception_handler(Exception, unexpected_error_handler)

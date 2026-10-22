@@ -59,7 +59,7 @@ def get_loss_ratio_by_segment(
             ROUND(SUM(p.written_premium), 2) AS written_premium,
             ROUND(COALESCE(SUM(cbp.paid_claim_amount), 0), 2) AS paid_claim_amount,
             ROUND(
-                COALESCE(SUM(cbp.paid_claim_amount), 0)
+                1.0 * COALESCE(SUM(cbp.paid_claim_amount), 0)
                 / NULLIF(SUM(p.written_premium), 0),
                 6
             ) AS loss_ratio

@@ -86,7 +86,7 @@ def test_router_rejects_unsupported_question() -> None:
         match="Unsupported question",
     ):
         route_question(
-            question="What is the average claim severity by province?",
+            question="What is the average premium by broker?",
             available_years=AVAILABLE_YEARS,
         )
 

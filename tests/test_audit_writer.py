@@ -114,7 +114,7 @@ def test_agent_persists_failed_audit(
         UnsupportedQuestionError,
         match="Unsupported question",
     ):
-        agent.answer("What is the average claim severity by province?")
+        agent.answer("What is the average premium by broker?")
 
     audit_files = list(audit_directory.glob("*.json"))
 

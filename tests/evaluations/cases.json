@@ -1,102 +1,338 @@
 [
-    {
-      "id": "english-last-three-years",
-      "question": "Show the loss ratio by region and line of business for the last three underwriting years.",
-      "expected_tool_name": "get_loss_ratio_by_segment",
-      "expected_arguments": {
-        "underwriting_years": [2023, 2024, 2025],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
-        "provinces": null,
-        "lines_of_business": null
-      }
-    },
-    {
-      "id": "english-quebec-commercial-property",
-      "question": "Show the paid loss ratio for commercial property in Quebec for 2025.",
-      "expected_tool_name": "get_loss_ratio_by_segment",
-      "expected_arguments": {
-        "underwriting_years": [2025],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
-        "provinces": ["QC"],
-        "lines_of_business": ["commercial_property"]
-      }
-    },
-    {
-      "id": "french-quebec-commercial-property",
-      "question": "Afficher le ratio de sinistralité pour la propriété commerciale au Québec pour 2024 et 2025.",
-      "expected_tool_name": "get_loss_ratio_by_segment",
-      "expected_arguments": {
-        "underwriting_years": [2024, 2025],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
-        "provinces": ["QC"],
-        "lines_of_business": ["commercial_property"]
-      }
-    },
-    {
-      "id": "multiple-provinces",
-      "question": "Show loss ratio for Quebec and Alberta in 2025.",
-      "expected_tool_name": "get_loss_ratio_by_segment",
-      "expected_arguments": {
-        "underwriting_years": [2025],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
-        "provinces": ["QC", "AB"],
-        "lines_of_business": null
-      }
-    },
-    {
-      "id": "commercial-auto-ontario",
-      "question": "Show loss ratio for commercial auto in Ontario for 2023.",
-      "expected_tool_name": "get_loss_ratio_by_segment",
-      "expected_arguments": {
-        "underwriting_years": [2023],
-        "dimensions": [
-          "province",
-          "line_of_business",
-          "underwriting_year"
-        ],
-        "provinces": ["ON"],
-        "lines_of_business": ["commercial_auto"]
-      }
-    },
-    {
-      "id": "unsupported-severity",
-      "question": "What is the average claim severity by province?",
-      "expected_error": "UnsupportedQuestionError",
-      "expected_error_message": "Unsupported question"
-    },
-    {
-      "id": "unsupported-frequency",
-      "question": "Flag segments where claim frequency increased by more than 20% year over year.",
-      "expected_error": "UnsupportedQuestionError",
-      "expected_error_message": "Unsupported question"
-    },
-    {
-      "id": "unavailable-underwriting-year",
-      "question": "Show loss ratio for Quebec in 2021.",
-      "expected_error": "UnsupportedQuestionError",
-      "expected_error_message": "Requested underwriting years are not available: 2021"
-    },
-    {
-      "id": "empty-question",
-      "question": "   ",
-      "expected_error": "UnsupportedQuestionError",
-      "expected_error_message": "Question must not be empty"
+  {
+    "id": "english-last-three-years",
+    "question": "Show the loss ratio by region and line of business for the last three underwriting years.",
+    "expected_tool_name": "get_loss_ratio_by_segment",
+    "expected_arguments": {
+      "underwriting_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
     }
-  ]
-  
+  },
+  {
+    "id": "english-quebec-commercial-property",
+    "question": "Show the paid loss ratio for commercial property in Quebec for 2025.",
+    "expected_tool_name": "get_loss_ratio_by_segment",
+    "expected_arguments": {
+      "underwriting_years": [
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": [
+        "QC"
+      ],
+      "lines_of_business": [
+        "commercial_property"
+      ]
+    }
+  },
+  {
+    "id": "french-quebec-commercial-property",
+    "question": "Afficher le ratio de sinistralité pour la propriété commerciale au Québec pour 2024 et 2025.",
+    "expected_tool_name": "get_loss_ratio_by_segment",
+    "expected_arguments": {
+      "underwriting_years": [
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": [
+        "QC"
+      ],
+      "lines_of_business": [
+        "commercial_property"
+      ]
+    }
+  },
+  {
+    "id": "multiple-provinces",
+    "question": "Show loss ratio for Quebec and Alberta in 2025.",
+    "expected_tool_name": "get_loss_ratio_by_segment",
+    "expected_arguments": {
+      "underwriting_years": [
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": [
+        "QC",
+        "AB"
+      ],
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "commercial-auto-ontario",
+    "question": "Show loss ratio for commercial auto in Ontario for 2023.",
+    "expected_tool_name": "get_loss_ratio_by_segment",
+    "expected_arguments": {
+      "underwriting_years": [
+        2023
+      ],
+      "dimensions": [
+        "province",
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "lines_of_business": [
+        "commercial_auto"
+      ]
+    }
+  },
+  {
+    "id": "english-severity-by-province",
+    "question": "What is the average claim severity by province?",
+    "expected_tool_name": "get_claim_severity",
+    "expected_arguments": {
+      "underwriting_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "unsupported-frequency",
+    "question": "Flag segments where claim frequency increased by more than 20% year over year.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "Unsupported question"
+  },
+  {
+    "id": "unavailable-underwriting-year",
+    "question": "Show loss ratio for Quebec in 2021.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "Requested underwriting years are not available: 2021"
+  },
+  {
+    "id": "empty-question",
+    "question": "   ",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "Question must not be empty"
+  },
+  {
+    "id": "english-frequency-default-years",
+    "question": "Show the claim frequency trend for the last three years.",
+    "expected_tool_name": "get_claim_frequency_trend",
+    "expected_arguments": {
+      "years": [
+        2023,
+        2024,
+        2025
+      ],
+      "dimensions": [],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "english-frequency-by-province",
+    "question": "Show the claim frequency by province for 2024 and 2025.",
+    "expected_tool_name": "get_claim_frequency_trend",
+    "expected_arguments": {
+      "years": [
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "province"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "french-frequency-quebec-property",
+    "question": "Afficher la fréquence des sinistres par ligne d'affaires pour la propriété commerciale au Québec pour 2024 et 2025.",
+    "expected_tool_name": "get_claim_frequency_trend",
+    "expected_arguments": {
+      "years": [
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "line_of_business"
+      ],
+      "provinces": [
+        "QC"
+      ],
+      "lines_of_business": [
+        "commercial_property"
+      ]
+    }
+  },
+  {
+    "id": "unsupported-frequency-threshold",
+    "question": "Show claim frequency above a 20 percent threshold by province.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "threshold or alert"
+  },
+  {
+    "id": "ambiguous-frequency-severity",
+    "question": "Show claim frequency and severity by province.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "one analysis at a time"
+  },
+  {
+    "id": "frequency-single-year",
+    "question": "Show the claim frequency for 2025.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "at least two years"
+  },
+  {
+    "id": "frequency-unavailable-year",
+    "question": "Show the claim frequency trend for 2021 and 2025.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "Requested years are not available: 2021"
+  },
+  {
+    "id": "ambiguous-two-analyses",
+    "question": "Show the loss ratio and the claim frequency by province.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "one analysis at a time"
+  },
+  {
+    "id": "french-severity-quebec-property",
+    "question": "Afficher la sévérité des sinistres pour la propriété commerciale au Québec pour 2025.",
+    "expected_tool_name": "get_claim_severity",
+    "expected_arguments": {
+      "underwriting_years": [
+        2025
+      ],
+      "dimensions": [
+        "underwriting_year"
+      ],
+      "provinces": [
+        "QC"
+      ],
+      "lines_of_business": [
+        "commercial_property"
+      ]
+    }
+  },
+  {
+    "id": "english-exposure-summary-by-line",
+    "question": "Show the exposure summary by line of business for 2024 and 2025.",
+    "expected_tool_name": "get_exposure_summary",
+    "expected_arguments": {
+      "underwriting_years": [
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "line_of_business",
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "french-exposure-summary-by-province",
+    "question": "Afficher le résumé de l’exposition par province pour 2025.",
+    "expected_tool_name": "get_exposure_summary",
+    "expected_arguments": {
+      "underwriting_years": [
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "english-quality-metrics-by-province",
+    "question": "Show the portfolio quality metrics by province for the last three underwriting years.",
+    "expected_tool_name": "get_portfolio_quality_metrics",
+    "expected_arguments": {
+      "underwriting_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "province",
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "french-quality-metrics-alberta",
+    "question": "Afficher les métriques de qualité du portefeuille pour l'Alberta en 2025.",
+    "expected_tool_name": "get_portfolio_quality_metrics",
+    "expected_arguments": {
+      "underwriting_years": [
+        2025
+      ],
+      "dimensions": [
+        "underwriting_year"
+      ],
+      "provinces": [
+        "AB"
+      ],
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "quality-metrics-win-over-single-metrics",
+    "question": "Show the portfolio quality metrics including loss ratio and claim frequency.",
+    "expected_tool_name": "get_portfolio_quality_metrics",
+    "expected_arguments": {
+      "underwriting_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "dimensions": [
+        "underwriting_year"
+      ],
+      "provinces": null,
+      "lines_of_business": null
+    }
+  },
+  {
+    "id": "unsupported-severity-threshold",
+    "question": "Flag segments where claim severity exceeds 5000.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "threshold or alert"
+  },
+  {
+    "id": "ambiguous-severity-exposure",
+    "question": "Show severity and the exposure summary.",
+    "expected_error": "UnsupportedQuestionError",
+    "expected_error_message": "one analysis at a time"
+  }
+]

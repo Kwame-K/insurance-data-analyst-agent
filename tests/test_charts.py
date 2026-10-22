@@ -97,7 +97,7 @@ def test_generate_chart_rejects_unsupported_chart_type(
     raw_results: list[dict],
 ) -> None:
     metadata = ChartMetadata(
-        chart_type=ChartType.LINE,
+        chart_type=ChartType.TABLE,
         x="underwriting_year",
         y="loss_ratio",
         series=[

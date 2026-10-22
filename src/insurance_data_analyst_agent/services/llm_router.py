@@ -14,12 +14,16 @@ from insurance_data_analyst_agent.llm.prompts import (
 )
 from insurance_data_analyst_agent.llm.trace import routing_provider_var
 from insurance_data_analyst_agent.models.analytics import (
+    ClaimFrequencyRequest,
     Dimension,
+    LossRatioRequest,
 )
 from insurance_data_analyst_agent.models.routing import (
     ToolSelection,
 )
 from insurance_data_analyst_agent.services.router import (
+    check_unsupported_scope,
+    normalize_text,
     route_question,
 )
 
@@ -53,6 +57,9 @@ class LLMRouter:
                 available_years=available_years,
             )
 
+            if not isinstance(selection.arguments, LossRatioRequest):
+                check_unsupported_scope(normalize_text(question))
+
             return selection
 
         except (
@@ -78,10 +85,21 @@ class LLMRouter:
         available_years: list[int],
     ) -> None:
         """Validate LLM-selected arguments against local data constraints."""
+        arguments = selection.arguments
+
+        if isinstance(arguments, ClaimFrequencyRequest):
+            unavailable = [
+                year for year in arguments.years if year not in available_years
+            ]
+
+            if unavailable:
+                unavailable_text = ", ".join(str(year) for year in unavailable)
+                raise ValueError(f"LLM selected unavailable years: {unavailable_text}.")
+
+            return
+
         unavailable_years = [
-            year
-            for year in selection.arguments.underwriting_years
-            if year not in available_years
+            year for year in arguments.underwriting_years if year not in available_years
         ]
 
         if unavailable_years:
@@ -91,11 +109,14 @@ class LLMRouter:
                 f"{unavailable_years_text}."
             )
 
+        if not isinstance(arguments, LossRatioRequest):
+            return
+
         expected_dimensions = [
             Dimension.PROVINCE,
             Dimension.LINE_OF_BUSINESS,
             Dimension.UNDERWRITING_YEAR,
         ]
 
-        if selection.arguments.dimensions != expected_dimensions:
+        if arguments.dimensions != expected_dimensions:
             raise ValueError("LLM selected unsupported loss-ratio dimensions.")

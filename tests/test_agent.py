@@ -91,7 +91,7 @@ def test_agent_rejects_unsupported_question(
         UnsupportedQuestionError,
         match="Unsupported question",
     ):
-        agent.answer("What is the average claim severity by province?")
+        agent.answer("What is the average premium by broker?")
 
 
 def test_agent_rejects_missing_database(

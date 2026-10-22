@@ -20,11 +20,15 @@ from insurance_data_analyst_agent.tools.registry import (
 )
 
 
-def test_default_registry_contains_loss_ratio_tool() -> None:
+def test_default_registry_contains_all_tools() -> None:
     registry = build_default_tool_registry()
 
     assert registry.list_tool_names() == [
+        "get_claim_frequency_trend",
+        "get_claim_severity",
+        "get_exposure_summary",
         "get_loss_ratio_by_segment",
+        "get_portfolio_quality_metrics",
     ]
 
 

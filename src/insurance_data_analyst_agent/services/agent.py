@@ -27,7 +27,7 @@ from insurance_data_analyst_agent.services.audit_writer import (
     AuditWriter,
 )
 from insurance_data_analyst_agent.services.response_builder import (
-    build_loss_ratio_response,
+    build_response,
 )
 from insurance_data_analyst_agent.services.router import (
     route_question,
@@ -85,9 +85,9 @@ class InsuranceDataAnalystAgent:
 
             tool_call.execution_status = "success"
 
-            response = build_loss_ratio_response(
+            response = build_response(
                 question=question,
-                request=tool_selection.arguments,
+                selection=tool_selection,
                 raw_results=raw_results,
                 database_path=self.database_path,
                 dataset_version=self.dataset_version,

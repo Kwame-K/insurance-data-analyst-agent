@@ -13,6 +13,7 @@ dependencies = [
     "google-genai>=2.22.0",
     "groq>=1.7.0",
     "matplotlib>=3.11.1",
+    "mcp>=2,<3",
     "psycopg[binary]>=3.3",
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
@@ -25,6 +26,7 @@ dependencies = [
 [project.scripts]
 insurance-data-analyst-agent = "insurance_data_analyst_agent:main"
 insurance-data-analyst = "insurance_data_analyst_agent.cli:app"
+insurance-data-analyst-mcp = "insurance_data_analyst_agent.mcp_server.server:main"
 
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]

@@ -321,13 +321,12 @@ get_portfolio_quality_metrics
 ```
 
 Each new tool should add: a Pydantic request contract, deterministic Python/SQLite calculation logic, registry registration, router vocabulary and evaluation cases, calculation-integrity tests, response-builder support, chart metadata and rendering support when relevant, and documentation of metric definitions and limitations.
-The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The same agent can later be used by an MCP server, a Streamlit interface, a notebook demonstration, a scheduled reporting job, or the broader Underwriting Agent workflow.
-The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The same agent can later be used by an MCP server, a Streamlit interface, a notebook demonstration, a scheduled reporting job, or the broader Underwriting Agent workflow.
+The CLI, the REST API, and the MCP server share the same `InsuranceDataAnalystAgent`. The REST typed endpoints and the MCP tools both go through `services/direct_call.py`, which pairs a fixed router with the agent, the registry, and the audit writer, so the response contract and the audit artifact are identical across transports. The MCP server (`mcp_server/server.py`, stdio) exposes the five tools as read-only tools and maps failures to `VALIDATION_ERROR`, `DATA_UNAVAILABLE`, and `INTERNAL_ERROR`.
 
 
 ### Future delivery interfaces
 
-The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The same agent can later be used by an MCP server, a Streamlit interface, a notebook demonstration, a scheduled reporting job, or the broader Underwriting Agent workflow.
+The same agent can later be used by a Streamlit interface, a notebook demonstration, a scheduled reporting job, or the broader Underwriting Agent workflow.
 
 ## Current Limitations
 
@@ -349,7 +348,7 @@ The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The
 |---|---|---|---|
 | Observability | Structured logs with correlation IDs | Langfuse or OpenTelemetry around `agent.answer()` | Visibility into routing decisions, fallback triggers, and per-run cost |
 | Persistence | PostgreSQL for portfolio data, flat JSON audits | Audit tables in PostgreSQL | Shared, queryable audit history across the platform |
-| Integration | REST API on port 8003 | MCP server exposing the analytical tools | Direct use by the Underwriting Agent and other MCP clients |
+| Integration | REST API on port 8003 and a stdio MCP server | Streamable HTTP MCP transport with authentication | MCP use by remote clients and services |
 | Routing validation | Pydantic + deterministic fallback | Pydantic AI or constrained decoding | Fewer invalid LLM candidates before the fallback path triggers |
 | Visualization | Matplotlib static PNG | Plotly for the planned Streamlit UI | Interactive charts for the V2 analytics interface |
 
@@ -358,7 +357,7 @@ The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The
 1. Add further tools (earned-premium and incurred-loss bases) following the documented extensibility checklist.
 2. Instrument `agent.answer()` with tracing to capture router mode, fallback events, and latency per execution.
 3. Store audit records in PostgreSQL, keyed by `correlation_id`, for cross-project analytics.
-4. Expose the agent through MCP so the Underwriting Agent can call it as a tool.
+4. Connect the Underwriting Agent to the MCP server or the REST API for portfolio context, and add an authenticated Streamable HTTP transport.
 5. Add authentication to the REST API before exposing it beyond the local platform network.
 6. Expand the router evaluation set with additional French vocabulary and rejection cases.
 

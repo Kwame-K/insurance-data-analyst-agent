@@ -23,11 +23,11 @@
 ## After V1 — original 8-step plan (to continue)
 
 1. Versioned FastAPI API (done in V1, extend with consumer-provided request ids if missing)
-2. MCP server (stdio), tool `get_loss_ratio_by_segment`, read-only annotation, shared response adapter between HTTP and MCP
+2. MCP server (stdio) is done: five typed read-only tools (`insurance-data-analyst-mcp`), a `services/direct_call.py` shared with the REST API, the same `v1` envelope, stable error codes and an audit artifact per call. Still open: Streamable HTTP transport (needs authentication) and a platform e2e test
 3. Docker and platform (finish whatever V1-7 leaves open)
 4. Database (finish whatever V1-6 leaves open)
 5. Analytical capabilities: `get_claim_frequency_trend`, `get_claim_severity`, `get_exposure_summary` and `get_portfolio_quality_metrics` are done (tool, registry, response, chart, routing, REST endpoint, CLI command, tests). Still open: earned premium instead of written premium; incurred losses (keep paid/written as an option, add a `basis` field)
-6. Tests: MCP contract test (tool list), e2e test marked `e2e` (platform only), non-regression test per new tool
+6. Tests: MCP contract test (tool list, annotations) is done; still open: e2e test marked `e2e` (platform only); non-regression test per new tool stays the rule
 7. Underwriting agent (Project 4): HTTP client to Project 2, tolerated failure, degraded status, loss ratio of segment (province, line, year) as decision context, never an automatic rule
 8. Documentation: README sections API/MCP/Docker/configuration, platform README entry, task lists, documented limits
 

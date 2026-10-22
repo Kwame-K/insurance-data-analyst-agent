@@ -263,3 +263,211 @@ def test_include_chart_with_empty_results_returns_no_chart(
     assert body["data"]["answer"].startswith("No portfolio records matched")
     assert body["data"]["chart"]["output_path"] is None
     assert not (tmp_path / "charts" / "empty-1.png").exists()
+
+
+FREQUENCY_QUESTION = "Show the claim frequency by province for 2024 and 2025."
+
+
+def test_analyze_routes_claim_frequency_question(
+    tmp_path: Path, database_path: Path
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post("/v1/analyze", json={"question": FREQUENCY_QUESTION})
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["data"]["tool_calls"][0]["tool_name"] == "get_claim_frequency_trend"
+    assert body["data"]["raw_results"]
+
+
+def test_analyze_rejects_claim_frequency_threshold_question(
+    tmp_path: Path, database_path: Path
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(
+        "/v1/analyze",
+        json={"question": "Flag segments where claim frequency rose by more than 20%."},
+    )
+
+    assert response.status_code == 422
+    assert not response.json().get("data")
+
+
+def test_claim_frequency_direct_call(tmp_path: Path, database_path: Path) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(
+        "/v1/claim-frequency",
+        json={
+            "arguments": {
+                "years": [2024, 2025],
+                "dimensions": ["province"],
+                "provinces": ["QC"],
+            },
+            "request_id": "f-1",
+        },
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["routing_provider"] == "direct"
+    assert body["request_id"] == "f-1"
+    assert body["data"]["tool_calls"][0]["tool_name"] == "get_claim_frequency_trend"
+    assert body["data"]["raw_results"]
+    assert all(row["province"] == "QC" for row in body["data"]["raw_results"])
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"years": [2025]},
+        {"years": [1999, 2025]},
+        {"years": [2024, 2025], "provinces": ["XX"]},
+        {"years": [2024, 2025], "dimensions": ["underwriting_year"]},
+        {"underwriting_years": [2024, 2025]},
+    ],
+)
+def test_claim_frequency_rejects_invalid_arguments(
+    tmp_path: Path, database_path: Path, arguments: dict
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post("/v1/claim-frequency", json={"arguments": arguments})
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_claim_frequency_include_chart_writes_png(
+    tmp_path: Path, database_path: Path
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(
+        "/v1/claim-frequency",
+        json={"arguments": {"years": [2024, 2025]}, "include_chart": True},
+        headers={"X-Correlation-ID": "freq-chart-1"},
+    )
+
+    assert response.status_code == 200
+    assert (tmp_path / "charts" / "freq-chart-1.png").exists()
+
+
+def test_claim_frequency_with_empty_results_returns_no_chart(
+    tmp_path: Path, database_path: Path
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(
+        "/v1/claim-frequency",
+        json={"arguments": {"years": [2098, 2099]}, "include_chart": True},
+        headers={"X-Correlation-ID": "freq-empty-1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["raw_results"] == []
+    assert not (tmp_path / "charts" / "freq-empty-1.png").exists()
+
+
+UNDERWRITING_YEAR_ENDPOINTS = [
+    ("/v1/severity", "get_claim_severity", True),
+    ("/v1/exposure-summary", "get_exposure_summary", True),
+    ("/v1/portfolio-quality-metrics", "get_portfolio_quality_metrics", False),
+]
+
+
+@pytest.mark.parametrize(
+    ("path", "tool_name", "has_chart"), UNDERWRITING_YEAR_ENDPOINTS
+)
+def test_underwriting_year_direct_calls(
+    tmp_path: Path,
+    database_path: Path,
+    path: str,
+    tool_name: str,
+    has_chart: bool,
+) -> None:
+    client = make_client(tmp_path, database_path)
+    payload: dict = {
+        "arguments": {
+            "underwriting_years": [2024, 2025],
+            "dimensions": ["province", "underwriting_year"],
+            "provinces": ["QC"],
+        },
+        "request_id": "u-1",
+    }
+    if has_chart:
+        payload["include_chart"] = True
+
+    response = client.post(
+        path, json=payload, headers={"X-Correlation-ID": "uw-chart-1"}
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["routing_provider"] == "direct"
+    assert body["request_id"] == "u-1"
+    assert body["data"]["tool_calls"][0]["tool_name"] == tool_name
+    assert body["data"]["raw_results"]
+    assert all(row["province"] == "QC" for row in body["data"]["raw_results"])
+    assert (tmp_path / "charts" / "uw-chart-1.png").exists() is has_chart
+
+
+@pytest.mark.parametrize(
+    ("path", "tool_name", "has_chart"), UNDERWRITING_YEAR_ENDPOINTS
+)
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"underwriting_years": []},
+        {"underwriting_years": [1999]},
+        {"underwriting_years": [2025], "provinces": ["XX"]},
+        {"underwriting_years": [2025], "dimensions": ["province", "province"]},
+        {"years": [2024, 2025]},
+    ],
+)
+def test_underwriting_year_direct_calls_reject_invalid_arguments(
+    tmp_path: Path,
+    database_path: Path,
+    path: str,
+    tool_name: str,
+    has_chart: bool,
+    arguments: dict,
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(path, json={"arguments": arguments})
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_quality_endpoint_has_no_chart_option(
+    tmp_path: Path, database_path: Path
+) -> None:
+    client = make_client(tmp_path, database_path)
+
+    response = client.post(
+        "/v1/portfolio-quality-metrics",
+        json={"arguments": {"underwriting_years": [2025]}, "include_chart": True},
+    )
+
+    assert response.status_code == 422
+
+
+def test_analyze_routes_new_tools(tmp_path: Path, database_path: Path) -> None:
+    client = make_client(tmp_path, database_path)
+
+    for question, tool_name in [
+        ("What is the average claim severity by province?", "get_claim_severity"),
+        ("Show the exposure summary for 2025.", "get_exposure_summary"),
+        (
+            "Show the portfolio quality metrics for 2025.",
+            "get_portfolio_quality_metrics",
+        ),
+    ]:
+        response = client.post("/v1/analyze", json={"question": question})
+
+        assert response.status_code == 200, question
+        assert response.json()["data"]["tool_calls"][0]["tool_name"] == tool_name

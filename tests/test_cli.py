@@ -208,7 +208,7 @@ def test_ask_rejects_unsupported_question(
         app,
         [
             "ask",
-            "What is the claim severity by province?",
+            "What is the average premium by broker?",
             "--database-path",
             str(database_path),
         ],
@@ -217,3 +217,169 @@ def test_ask_rejects_unsupported_question(
     assert result.exit_code == 2
     assert result.stdout == ""
     assert "Unsupported question" in result.stderr
+
+
+def init_database(tmp_path: Path) -> Path:
+    database_path = tmp_path / "portfolio.db"
+    result = runner.invoke(
+        app, ["init-data", "--database-path", str(database_path), "--seed", "42"]
+    )
+    assert result.exit_code == 0
+    return database_path
+
+
+def test_claim_frequency_returns_auditable_json(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "claim-frequency",
+            "--database-path",
+            str(database_path),
+            "--year",
+            "2024",
+            "--year",
+            "2025",
+            "--by",
+            "province",
+            "--province",
+            "QC",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    payload = json.loads(result.stdout)
+
+    assert payload["tool_calls"][0]["tool_name"] == "get_claim_frequency_trend"
+    assert payload["raw_results"]
+    assert all(row["province"] == "QC" for row in payload["raw_results"])
+    assert "claims / exposure units" in payload["audit"]["calculation_definition"]
+
+
+def test_claim_frequency_writes_chart(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+    chart_path = tmp_path / "frequency.png"
+
+    result = runner.invoke(
+        app,
+        [
+            "claim-frequency",
+            "--database-path",
+            str(database_path),
+            "-y",
+            "2024",
+            "-y",
+            "2025",
+            "--chart-output",
+            str(chart_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert chart_path.exists()
+    assert json.loads(result.stdout)["chart"]["output_path"] == str(chart_path)
+
+
+def test_claim_frequency_rejects_invalid_arguments(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+
+    single_year = runner.invoke(
+        app,
+        ["claim-frequency", "--database-path", str(database_path), "-y", "2025"],
+    )
+    unknown_segment = runner.invoke(
+        app,
+        [
+            "claim-frequency",
+            "--database-path",
+            str(database_path),
+            "-y",
+            "2024",
+            "-y",
+            "2025",
+            "--by",
+            "postal_code",
+        ],
+    )
+
+    assert single_year.exit_code != 0
+    assert unknown_segment.exit_code != 0
+
+
+def test_underwriting_year_commands_return_auditable_json(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+
+    for command, tool_name in [
+        ("severity", "get_claim_severity"),
+        ("exposure-summary", "get_exposure_summary"),
+        ("portfolio-quality-metrics", "get_portfolio_quality_metrics"),
+    ]:
+        result = runner.invoke(
+            app,
+            [
+                command,
+                "--database-path",
+                str(database_path),
+                "-y",
+                "2024",
+                "-y",
+                "2025",
+                "--by",
+                "province",
+                "--province",
+                "QC",
+            ],
+        )
+
+        assert result.exit_code == 0, command
+
+        payload = json.loads(result.stdout)
+
+        assert payload["tool_calls"][0]["tool_name"] == tool_name
+        assert payload["tool_calls"][0]["validated_arguments"]["dimensions"] == [
+            "province",
+            "underwriting_year",
+        ]
+        assert payload["raw_results"]
+        assert all(row["province"] == "QC" for row in payload["raw_results"])
+
+
+def test_severity_and_exposure_commands_write_charts(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+
+    for command in ("severity", "exposure-summary"):
+        chart_path = tmp_path / f"{command}.png"
+
+        result = runner.invoke(
+            app,
+            [
+                command,
+                "--database-path",
+                str(database_path),
+                "-y",
+                "2025",
+                "--chart-output",
+                str(chart_path),
+            ],
+        )
+
+        assert result.exit_code == 0, command
+        assert chart_path.exists()
+
+
+def test_underwriting_year_commands_reject_invalid_arguments(tmp_path: Path) -> None:
+    database_path = init_database(tmp_path)
+
+    for extra in (
+        ["-y", "1999"],
+        ["-y", "2025", "--by", "postal_code"],
+        ["-y", "2025", "--province", "XX"],
+    ):
+        result = runner.invoke(
+            app,
+            ["severity", "--database-path", str(database_path), *extra],
+        )
+
+        assert result.exit_code != 0, extra

@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from insurance_data_analyst_agent.models.analytics import (
     AnalyticsResponse,
+    ClaimFrequencyRequest,
     Dimension,
+    ExposureSummaryRequest,
     LossRatioRequest,
+    PortfolioQualityRequest,
+    SeverityRequest,
 )
 
-API_VERSION = "v1"
+API_VERSION: Final = "v1"
 
 RequestId = Field(
     default=None,
@@ -54,6 +58,45 @@ class LossRatioApiRequest(BaseModel):
                 "line_of_business and underwriting_year."
             )
         return self
+
+
+class ClaimFrequencyApiRequest(BaseModel):
+    """Typed direct call sent to POST /v1/claim-frequency."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    arguments: ClaimFrequencyRequest
+    request_id: str | None = RequestId
+    include_chart: bool = False
+
+
+class SeverityApiRequest(BaseModel):
+    """Typed direct call sent to POST /v1/severity."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    arguments: SeverityRequest
+    request_id: str | None = RequestId
+    include_chart: bool = False
+
+
+class ExposureSummaryApiRequest(BaseModel):
+    """Typed direct call sent to POST /v1/exposure-summary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    arguments: ExposureSummaryRequest
+    request_id: str | None = RequestId
+    include_chart: bool = False
+
+
+class PortfolioQualityApiRequest(BaseModel):
+    """Typed direct call sent to POST /v1/portfolio-quality-metrics (no chart)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    arguments: PortfolioQualityRequest
+    request_id: str | None = RequestId
 
 
 class ApiResponse(BaseModel):

@@ -8,14 +8,21 @@ from fastapi import APIRouter, Request
 from insurance_data_analyst_agent.api.schemas import (
     AnalyzeRequest,
     ApiResponse,
+    ClaimFrequencyApiRequest,
+    ExposureSummaryApiRequest,
     HealthResponse,
     LossRatioApiRequest,
+    PortfolioQualityApiRequest,
+    SeverityApiRequest,
 )
 from insurance_data_analyst_agent.config import Settings
 from insurance_data_analyst_agent.infrastructure.persistence.access import DataSource
 from insurance_data_analyst_agent.llm.trace import routing_provider_var
-from insurance_data_analyst_agent.models.analytics import LossRatioRequest
-from insurance_data_analyst_agent.models.routing import ToolSelection
+from insurance_data_analyst_agent.models.routing import (
+    ToolArguments,
+    ToolSelection,
+    selection_for,
+)
 from insurance_data_analyst_agent.services.agent import (
     InsuranceDataAnalystAgent,
     QuestionRouter,
@@ -31,12 +38,9 @@ health_router = APIRouter(tags=["health"])
 v1_router = APIRouter(prefix="/v1", tags=["analytics"])
 
 
-def fixed_router(arguments: LossRatioRequest) -> QuestionRouter:
-    """Return a router that always selects the loss-ratio tool."""
-    selection = ToolSelection(
-        tool_name="get_loss_ratio_by_segment",
-        arguments=arguments,
-    )
+def fixed_router(arguments: ToolArguments) -> QuestionRouter:
+    """Return a router that always selects the tool owning the arguments."""
+    selection = selection_for(arguments)
 
     def route(question: str, available_years: list[int]) -> ToolSelection:
         return selection
@@ -108,27 +112,86 @@ def analyze(payload: AnalyzeRequest, request: Request) -> ApiResponse:
     )
 
 
-@v1_router.post("/loss-ratio", response_model=ApiResponse)
-def loss_ratio(payload: LossRatioApiRequest, request: Request) -> ApiResponse:
+def run_direct_call(
+    request: Request,
+    *,
+    body_request_id: str | None,
+    arguments: ToolArguments,
+    include_chart: bool,
+) -> ApiResponse:
+    """Run the tool owning the typed arguments, without any question routing."""
     settings: Settings = request.app.state.settings
     correlation_id: str = request.state.correlation_id
-    request_id = bind_request_id(request, payload.request_id)
+    request_id = bind_request_id(request, body_request_id)
+    tool_name = selection_for(arguments).tool_name
 
     agent = build_agent(
-        settings, request.app.state.data_source, fixed_router(payload.arguments)
+        settings, request.app.state.data_source, fixed_router(arguments)
     )
     response = agent.answer(
-        question="Direct call: get_loss_ratio_by_segment",
-        chart_output_path=chart_path_for(
-            settings, correlation_id, payload.include_chart
-        ),
+        question=f"Direct call: {tool_name}",
+        chart_output_path=chart_path_for(settings, correlation_id, include_chart),
     )
 
-    logger.info("loss-ratio direct call completed")
+    logger.info("%s direct call completed", tool_name)
 
     return ApiResponse(
         correlation_id=correlation_id,
         request_id=request_id,
         routing_provider="direct",
         data=response,
+    )
+
+
+@v1_router.post("/loss-ratio", response_model=ApiResponse)
+def loss_ratio(payload: LossRatioApiRequest, request: Request) -> ApiResponse:
+    return run_direct_call(
+        request,
+        body_request_id=payload.request_id,
+        arguments=payload.arguments,
+        include_chart=payload.include_chart,
+    )
+
+
+@v1_router.post("/claim-frequency", response_model=ApiResponse)
+def claim_frequency(payload: ClaimFrequencyApiRequest, request: Request) -> ApiResponse:
+    return run_direct_call(
+        request,
+        body_request_id=payload.request_id,
+        arguments=payload.arguments,
+        include_chart=payload.include_chart,
+    )
+
+
+@v1_router.post("/severity", response_model=ApiResponse)
+def severity(payload: SeverityApiRequest, request: Request) -> ApiResponse:
+    return run_direct_call(
+        request,
+        body_request_id=payload.request_id,
+        arguments=payload.arguments,
+        include_chart=payload.include_chart,
+    )
+
+
+@v1_router.post("/exposure-summary", response_model=ApiResponse)
+def exposure_summary(
+    payload: ExposureSummaryApiRequest, request: Request
+) -> ApiResponse:
+    return run_direct_call(
+        request,
+        body_request_id=payload.request_id,
+        arguments=payload.arguments,
+        include_chart=payload.include_chart,
+    )
+
+
+@v1_router.post("/portfolio-quality-metrics", response_model=ApiResponse)
+def portfolio_quality_metrics(
+    payload: PortfolioQualityApiRequest, request: Request
+) -> ApiResponse:
+    return run_direct_call(
+        request,
+        body_request_id=payload.request_id,
+        arguments=payload.arguments,
+        include_chart=False,
     )

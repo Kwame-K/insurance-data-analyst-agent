@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -41,12 +41,11 @@ def _error_response(
     )
 
 
-async def validation_error_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    validation_exc = cast(RequestValidationError, exc)
     details = [
         {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]}
-        for e in exc.errors()
+        for e in validation_exc.errors()
     ]
     return _error_response(
         request, 422, "validation_error", "Request validation failed.", details
@@ -54,24 +53,23 @@ async def validation_error_handler(
 
 
 async def unsupported_question_handler(
-    request: Request, exc: UnsupportedQuestionError
+    request: Request, exc: Exception
 ) -> JSONResponse:
     return _error_response(request, 422, "unsupported_question", str(exc))
 
 
-async def data_unavailable_handler(
-    request: Request, exc: FileNotFoundError | OperationalError
-) -> JSONResponse:
+async def data_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Data source unavailable")
     return _error_response(
         request, 503, "data_unavailable", "Data source is unavailable."
     )
 
 
-async def http_error_handler(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
-    return _error_response(request, exc.status_code, "http_error", str(exc.detail))
+async def http_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    http_exc = cast(StarletteHTTPException, exc)
+    return _error_response(
+        request, http_exc.status_code, "http_error", str(http_exc.detail)
+    )
 
 
 async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:

@@ -27,7 +27,7 @@
 3. Docker and platform (finish whatever V1-7 leaves open)
 4. Database (finish whatever V1-6 leaves open)
 5. Analytical capabilities: `get_claim_frequency_trend`, `get_claim_severity`, `get_exposure_summary` and `get_portfolio_quality_metrics` are done (tool, registry, response, chart, routing, REST endpoint, CLI command, tests). Still open: earned premium instead of written premium; incurred losses (keep paid/written as an option, add a `basis` field)
-6. Tests: MCP contract test (tool list, annotations) is done; still open: e2e test marked `e2e` (platform only); non-regression test per new tool stays the rule
+6. Tests: MCP contract test (tool list, annotations) and the HTTP e2e tests marked `e2e` (`tests/e2e/`, platform only) are done; a non-regression test per new tool stays the rule
 7. Underwriting agent (Project 4): HTTP client to Project 2, tolerated failure, degraded status, loss ratio of segment (province, line, year) as decision context, never an automatic rule
 8. Documentation: README sections API/MCP/Docker/configuration, platform README entry, task lists, documented limits
 

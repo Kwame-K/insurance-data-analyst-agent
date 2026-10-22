@@ -398,6 +398,15 @@ PostgreSQL parity tests compare PostgreSQL and SQLite results for every tool. Th
 TEST_DATABASE_URL=postgresql+psycopg://analyst_app:ci_password@localhost:5432/analyst_test uv run pytest tests/test_postgres.py
 ```
 
+End-to-end tests call the running platform over HTTP (default `http://127.0.0.1:8003`, override with `E2E_API_URL`) and are skipped unless selected. They check contracts and cross-endpoint consistency, not exact figures:
+
+```bash
+# in insurance-agentic-platform
+docker compose up --build -d
+# in this project
+uv run pytest -m e2e -rs -v
+```
+
 GitHub Actions runs formatting, linting, mypy, the test suite against a PostgreSQL 17 service, and the coverage gate on every push and pull request.
 
 ## Project Structure

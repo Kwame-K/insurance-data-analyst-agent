@@ -1,7 +1,7 @@
 [project]
 name = "insurance-data-analyst-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "Controlled, deterministic and auditable agent for insurance portfolio analytics (loss ratio, claim frequency, severity, exposure and portfolio quality), exposed through a CLI and a versioned REST API."
 readme = "README.md"
 authors = [
     { name = "Kristian", email = "kristian.klaban@gmail.com" }
@@ -33,6 +33,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "httpx2>=2.13.1",
+    "mypy>=2.4.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.6",

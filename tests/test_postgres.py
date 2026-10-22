@@ -72,6 +72,20 @@ def databases(
     engine.dispose()
 
 
+# SQL ROUND digits per field. PostgreSQL rounds exact NUMERIC values, SQLite
+# rounds binary floats, so a value sitting on a rounding tie can differ by one
+# unit of the last digit between the two engines.
+ROUNDING_STEP = {
+    "average_severity": 0.01,
+    "paid_claim_amount": 0.01,
+    "written_premium": 0.01,
+    "premium_per_exposure_unit": 0.01,
+    "exposure_units": 0.0001,
+    "average_exposure_per_policy": 0.0001,
+}
+DEFAULT_STEP = 1e-5
+
+
 def assert_rows_match(
     postgres_rows: list[dict[str, Any]],
     sqlite_rows: list[dict[str, Any]],
@@ -83,7 +97,8 @@ def assert_rows_match(
         assert pg.keys() == lite.keys()
         for key, expected in lite.items():
             if isinstance(expected, float):
-                assert pg[key] == pytest.approx(expected, abs=1e-5), key
+                step = ROUNDING_STEP.get(key, DEFAULT_STEP)
+                assert pg[key] == pytest.approx(expected, abs=step * 1.01), key
             else:
                 assert pg[key] == expected, key
 

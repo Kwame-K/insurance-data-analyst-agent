@@ -17,3 +17,5 @@ data/*.db
 output/audits/*.json
 output/audits/*.tmp
 output/charts/*.png
+
+.DS_Store

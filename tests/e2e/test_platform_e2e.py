@@ -48,6 +48,11 @@ def platform_is_up() -> None:
         )
 
 
+def _lower(headers: Any) -> dict[str, str]:
+    """Header names are case-insensitive; uvicorn sends them in lower case."""
+    return {name.lower(): value for name, value in headers.items()}
+
+
 def _post(
     path: str,
     body: dict[str, Any],
@@ -61,9 +66,13 @@ def _post(
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
-            return response.status, dict(response.headers), json.loads(response.read())
+            return (
+                response.status,
+                _lower(response.headers),
+                json.loads(response.read()),
+            )
     except urllib.error.HTTPError as error:
-        return error.code, dict(error.headers), json.loads(error.read())
+        return error.code, _lower(error.headers), json.loads(error.read())
 
 
 def _arguments(field: str, **extra: Any) -> dict[str, Any]:
@@ -89,7 +98,7 @@ def test_typed_endpoints_return_the_v1_envelope(path: str) -> None:
     )
 
     assert status == 200
-    assert headers["X-Correlation-ID"] == "e2e-typed-0001"
+    assert headers["x-correlation-id"] == "e2e-typed-0001"
     assert payload["api_version"] == "v1"
     assert payload["status"] == "success"
     assert payload["correlation_id"] == "e2e-typed-0001"
@@ -169,7 +178,7 @@ def test_unsupported_question_is_rejected_with_an_error_envelope() -> None:
     assert status == 422
     assert payload["status"] == "error"
     assert payload["error"]["code"] == "unsupported_question"
-    assert payload["correlation_id"] == headers["X-Correlation-ID"]
+    assert payload["correlation_id"] == headers["x-correlation-id"]
 
 
 def test_unknown_fields_are_rejected() -> None:

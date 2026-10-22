@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,7 +29,7 @@ def database_path(tmp_path: Path) -> Path:
     return path
 
 
-def make_selection(**arguments: object) -> ToolSelection:
+def make_selection(**arguments: Any) -> ToolSelection:
     return ToolSelection(
         tool_name=CLAIM_FREQUENCY_TOOL,
         arguments=ClaimFrequencyRequest(years=[2023, 2024, 2025], **arguments),

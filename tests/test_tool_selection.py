@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Final
+
 import pytest
 from pydantic import ValidationError
 
@@ -9,8 +11,8 @@ from insurance_data_analyst_agent.models.analytics import (
 )
 from insurance_data_analyst_agent.models.routing import ToolSelection
 
-LOSS_RATIO = "get_loss_ratio_by_segment"
-CLAIM_FREQUENCY = "get_claim_frequency_trend"
+LOSS_RATIO: Final = "get_loss_ratio_by_segment"
+CLAIM_FREQUENCY: Final = "get_claim_frequency_trend"
 
 
 def claim_frequency_selection() -> ToolSelection:

@@ -14,7 +14,9 @@ def test_analyze_request_accepts_valid_payload() -> None:
 
 def test_analyze_request_rejects_extra_fields() -> None:
     with pytest.raises(ValidationError):
-        AnalyzeRequest(question="Loss ratio in QC", sql="DROP TABLE claims")
+        AnalyzeRequest.model_validate(
+            {"question": "Loss ratio in QC", "sql": "DROP TABLE claims"}
+        )
 
 
 def test_analyze_request_rejects_bad_request_id() -> None:
@@ -24,17 +26,18 @@ def test_analyze_request_rejects_bad_request_id() -> None:
 
 def test_loss_ratio_request_reuses_domain_validation() -> None:
     with pytest.raises(ValidationError):
-        LossRatioApiRequest(arguments={"underwriting_years": [2025, 2025]})
+        LossRatioApiRequest.model_validate(
+            {"arguments": {"underwriting_years": [2025, 2025]}}
+        )
 
     with pytest.raises(ValidationError):
-        LossRatioApiRequest(
-            arguments={"underwriting_years": [2025], "provinces": ["XX"]}
+        LossRatioApiRequest.model_validate(
+            {"arguments": {"underwriting_years": [2025], "provinces": ["XX"]}}
         )
 
 
 def test_loss_ratio_chart_requires_all_dimensions() -> None:
     with pytest.raises(ValidationError, match="include_chart requires"):
-        LossRatioApiRequest(
-            arguments={"underwriting_years": [2025]},
-            include_chart=True,
+        LossRatioApiRequest.model_validate(
+            {"arguments": {"underwriting_years": [2025]}, "include_chart": True}
         )

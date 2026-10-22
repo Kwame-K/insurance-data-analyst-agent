@@ -4,7 +4,11 @@ import pytest
 
 from insurance_data_analyst_agent.llm.fake import FakeLLMClient
 from insurance_data_analyst_agent.llm.prompts import TOOL_SELECTION_SYSTEM_PROMPT
-from insurance_data_analyst_agent.models.analytics import Dimension
+from insurance_data_analyst_agent.models.analytics import (
+    Dimension,
+    LossRatioRequest,
+    UnderwritingYearRequest,
+)
 from insurance_data_analyst_agent.models.routing import ARGUMENT_MODELS
 from insurance_data_analyst_agent.services.llm_router import LLMRouter
 from insurance_data_analyst_agent.services.response_builder import RESPONSE_BUILDERS
@@ -39,6 +43,7 @@ def test_severity_question_gets_underwriting_year_dimension() -> None:
         Dimension.LINE_OF_BUSINESS,
         Dimension.UNDERWRITING_YEAR,
     ]
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2025]
 
 
@@ -94,6 +99,7 @@ def test_llm_router_accepts_valid_severity_selection() -> None:
     )
 
     assert selection.tool_name == "get_claim_severity"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2024, 2025]
     assert len(client.calls) == 1
 
@@ -111,6 +117,7 @@ def test_llm_router_falls_back_when_severity_year_is_unavailable() -> None:
     )
 
     assert selection.tool_name == "get_claim_severity"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == AVAILABLE_YEARS
 
 

@@ -18,7 +18,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def make_settings(**values: str) -> Settings:
-    return Settings(_env_file=None, **values)
+    return Settings(_env_file=None, **values)  # type: ignore[call-arg, arg-type]
 
 
 def test_no_keys_uses_deterministic_router() -> None:

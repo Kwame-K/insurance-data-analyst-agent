@@ -42,7 +42,7 @@ def make_client(
     router=route_question,
 ) -> TestClient:
     settings = Settings(
-        _env_file=None,
+        _env_file=None,  # type: ignore[call-arg]
         database_path=database_path,
         audit_directory=tmp_path / "audits",
         chart_directory=tmp_path / "charts",

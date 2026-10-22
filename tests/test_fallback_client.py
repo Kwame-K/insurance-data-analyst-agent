@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from insurance_data_analyst_agent.llm.base import LLMClientError
 from insurance_data_analyst_agent.llm.fake import FakeLLMClient
 from insurance_data_analyst_agent.llm.fallback import FallbackLLMClient
 from insurance_data_analyst_agent.llm.trace import routing_provider_var
+from insurance_data_analyst_agent.models.analytics import (
+    LossRatioRequest,
+    UnderwritingYearRequest,
+)
 from insurance_data_analyst_agent.services.llm_router import LLMRouter
 
-VALID_SELECTION = {
+VALID_SELECTION: dict[str, Any] = {
     "tool_name": "get_loss_ratio_by_segment",
     "arguments": {
         "underwriting_years": [2025],
@@ -78,6 +84,7 @@ def test_router_reports_deterministic_when_all_fail() -> None:
     selection = LLMRouter(client=client)("loss ratio 2025", [2024, 2025])
 
     assert routing_provider_var.get() == "deterministic"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2025]
 
 

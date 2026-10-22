@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from insurance_data_analyst_agent.models.analytics import (
+    LossRatioRequest,
+    UnderwritingYearRequest,
+)
 from insurance_data_analyst_agent.services.router import (
     UnsupportedQuestionError,
     normalize_text,
@@ -27,6 +31,7 @@ def test_router_selects_loss_ratio_tool_for_english_question() -> None:
     )
 
     assert selection.tool_name == "get_loss_ratio_by_segment"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2023, 2024, 2025]
     assert selection.arguments.provinces is None
     assert selection.arguments.lines_of_business is None
@@ -41,6 +46,7 @@ def test_router_extracts_quebec_and_commercial_property() -> None:
     )
 
     assert selection.tool_name == "get_loss_ratio_by_segment"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2025]
     assert selection.arguments.provinces == ["QC"]
     assert selection.arguments.lines_of_business == ["commercial_property"]
@@ -56,6 +62,7 @@ def test_router_supports_french_question() -> None:
     )
 
     assert selection.tool_name == "get_loss_ratio_by_segment"
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2024, 2025]
     assert selection.arguments.provinces == ["QC"]
     assert selection.arguments.lines_of_business == ["commercial_property"]
@@ -68,6 +75,7 @@ def test_router_extracts_multiple_provinces() -> None:
     )
 
     assert selection.arguments.provinces == ["QC", "AB"]
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2025]
 
 
@@ -77,6 +85,7 @@ def test_router_uses_last_three_years_by_default() -> None:
         available_years=AVAILABLE_YEARS,
     )
 
+    assert isinstance(selection.arguments, (LossRatioRequest, UnderwritingYearRequest))
     assert selection.arguments.underwriting_years == [2023, 2024, 2025]
 
 

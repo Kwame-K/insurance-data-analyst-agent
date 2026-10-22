@@ -18,18 +18,32 @@ The project accepts selected analytical questions in English or French, routes e
 - `FakeLLMClient` for offline, reproducible tests
 - Correlation and request identifiers propagated through logs, headers and responses
 - Uniform error envelope that never exposes internal details
-- Optional Matplotlib grouped-bar charts
+- Optional Matplotlib charts (grouped bars and lines)
 - Persistent JSON audit artifacts for successes and failures
 - Docker image and Compose service on the Insurance Agentic Platform
 - Synthetic insurance data only
 
 ## Current V1 capability
 
-V1 supports paid loss-ratio analysis segmented by:
+The agent supports five analyses.
 
-- Province
-- Line of business
-- Underwriting year
+- **Paid loss ratio**, segmented by province, line of business, and underwriting year.
+- **Claim frequency trend** (claims per exposure unit), by calendar year with the year-over-year change, optionally segmented by province and line of business. At least two years are required.
+- **Claim severity**: average paid amount per claim, by underwriting year and optionally province and line of business.
+- **Exposure summary**: policy count, exposure units, written premium, and average exposure per policy, by underwriting year and optional segments.
+- **Portfolio quality metrics**: loss ratio, claim frequency, average severity, premium per exposure unit, and share of policies with claims, together, by underwriting year and optional segments.
+
+Claim severity, exposure summary, and portfolio quality metrics use an underwriting-year (policy cohort) basis: they include the claims and exposure of the policies underwritten in the selected years, whatever the claim or exposure year. The claim frequency trend uses calendar years, so its figures are not directly comparable with the cohort `claim_frequency` of the portfolio quality metrics.
+
+| Tool | REST endpoint | CLI command |
+| --- | --- | --- |
+| `get_loss_ratio_by_segment` | `POST /v1/loss-ratio` | `loss-ratio` |
+| `get_claim_frequency_trend` | `POST /v1/claim-frequency` | `claim-frequency` |
+| `get_claim_severity` | `POST /v1/severity` | `severity` |
+| `get_exposure_summary` | `POST /v1/exposure-summary` | `exposure-summary` |
+| `get_portfolio_quality_metrics` | `POST /v1/portfolio-quality-metrics` | `portfolio-quality-metrics` |
+
+Natural-language questions go through `POST /v1/analyze` or the `ask` command.
 
 Supported examples:
 
@@ -45,10 +59,46 @@ Show the paid loss ratio for commercial property in Quebec for 2025.
 Afficher le ratio de sinistralité pour la propriété commerciale au Québec pour 2024 et 2025.
 ```
 
-Unsupported examples are rejected explicitly:
+Claim frequency examples:
+
+```text
+Show the claim frequency trend for the last three years.
+```
+
+```text
+Show the claim frequency by province for 2024 and 2025.
+```
+
+```text
+Afficher la fréquence des sinistres par ligne d'affaires pour la propriété commerciale au Québec pour 2024 et 2025.
+```
+
+Claim severity, exposure summary, and portfolio quality examples:
 
 ```text
 What is the average claim severity by province?
+```
+
+```text
+Afficher la sévérité des sinistres pour la propriété commerciale au Québec pour 2025.
+```
+
+```text
+Show the exposure summary by line of business for 2024 and 2025.
+```
+
+```text
+Show the portfolio quality metrics by province for the last three underwriting years.
+```
+
+A question that mentions several metrics together is routed to the portfolio quality metrics; two unrelated analyses in one question are rejected. Thresholds and alerts, and claim frequency trends over a single year, are rejected explicitly:
+
+```text
+Flag segments where claim severity exceeds 5000.
+```
+
+```text
+Show severity and the exposure summary.
 ```
 
 ```text
@@ -60,7 +110,8 @@ Flag segments where claim frequency increased by more than 20% year over year.
 ```text
 User question
     ↓
-CLI (ask) or REST API (POST /v1/analyze, POST /v1/loss-ratio)
+CLI (ask and one command per tool) or REST API
+(POST /v1/analyze and one typed endpoint per tool)
     ↓
 InsuranceDataAnalystAgent
     ↓
@@ -70,7 +121,7 @@ ToolSelection validated by Pydantic
     ↓
 ToolRegistry
     ↓
-get_loss_ratio_by_segment
+one of the five allow-listed tools
     ↓
 SQL query (PostgreSQL or SQLite) and deterministic calculation
     ↓
@@ -89,10 +140,14 @@ For a detailed architecture description, component responsibilities, sequence di
 
 The agent can execute only tools explicitly registered in `ToolRegistry`.
 
-The current V1 allow-list contains:
+The current allow-list contains:
 
 ```text
 get_loss_ratio_by_segment
+get_claim_frequency_trend
+get_claim_severity
+get_exposure_summary
+get_portfolio_quality_metrics
 ```
 
 A request cannot select an arbitrary Python function, shell command, file path, database connection, or SQL statement.
@@ -103,7 +158,7 @@ The user and the LLM never submit SQL. The implementation uses fixed SQL templat
 
 - Allow-listed grouping dimensions mapped to fixed column names
 - Bound parameters for every value filter
-- Validated underwriting years
+- Validated years (underwriting years, or calendar years for claim frequency)
 - Validated province filters
 - Validated line-of-business filters
 
@@ -111,11 +166,31 @@ The user and the LLM never submit SQL. The implementation uses fixed SQL templat
 
 The LLM does not calculate insurance metrics. SQL and Python perform all aggregations and metric calculations.
 
-The V1 metric is:
+The loss-ratio metric is:
 
 ```text
 paid_loss_ratio = total_paid_claim_amount / total_written_premium
 ```
+
+The claim-frequency metric is:
+
+```text
+claim_frequency = claim_count / exposure_units  (by calendar year)
+year_over_year_change = frequency / previous_requested_year_frequency - 1
+```
+
+Exposure and claims are aggregated by policy and year before joining, so a policy with several exposure rows or several claims never duplicates the other side. Claims are counted only on policies with exposure in the same year. Divisions are forced to decimal arithmetic so SQLite does not truncate integer sums.
+
+The cohort metrics are:
+
+```text
+average_severity = paid_claim_amount / claim_count
+average_exposure_per_policy = exposure_units / policy_count
+premium_per_exposure_unit = written_premium / exposure_units
+share_of_policies_with_claims = policies_with_claims / policy_count
+```
+
+Claims and exposure are aggregated by policy before joining, so no policy contributes its premium or exposure more than once. Severity is null for a segment without claims.
 
 The claims table is aggregated by policy before joining policies, preventing written-premium duplication when a policy has multiple claims.
 

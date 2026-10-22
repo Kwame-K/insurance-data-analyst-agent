@@ -160,8 +160,8 @@ The evaluation suite must include the following classes of scenarios.
 | Relative years | `last three underwriting years` | Resolve from database metadata, not hard-coded values |
 | Province filters | `Quebec and Alberta` | Extract `QC` and `AB` in deterministic order |
 | Line-of-business filters | `commercial auto in Ontario` | Extract `commercial_auto` and `ON` |
-| Unsupported metric | `What is claim severity by province?` | Reject without tool execution |
-| Unsupported analytical request | `Flag frequency increases above 20%.` | Reject until the frequency tool is added |
+| Unsupported analytical request | `Flag segments where claim severity exceeds 5000.` | Reject without tool execution |
+| Threshold or alert | `Flag frequency increases above 20%.` | Reject: tools return metrics, not alerts |
 | Empty input | Empty or whitespace-only question | Reject with a controlled error |
 | Unavailable year | `Show loss ratio for 2021.` | Reject rather than silently replace the requested year |
 | Missing database | Database path does not exist | Raise a controlled error and persist a failed audit |
@@ -206,14 +206,14 @@ Suggested fixture format for a rejection:
 
 ```json
 {
-  "id": "unsupported-severity",
-  "question": "What is the average claim severity by province?",
+  "id": "unsupported-severity-threshold",
+  "question": "Flag segments where claim severity exceeds 5000.",
   "expected_error": "UnsupportedQuestionError",
   "expected_error_message": "Unsupported question"
 }
 ```
 
-The initial V1 target is 15-20 curated router and tool-execution cases. The dataset must grow whenever a production-like failure, a routing ambiguity, or a regression is identified.
+The initial V1 target is 15-20 curated router and tool-execution cases. The suite currently holds 25 router cases: 15 accepted (loss ratio, claim frequency, severity, exposure summary, and portfolio quality metrics, in English and French) and 10 rejected (frequency and severity thresholds, unavailable years, single-year trends, mixed analyses, empty question).
 
 ## Calculation-Integrity Tests
 
@@ -368,9 +368,9 @@ GitHub Actions must run the same quality and test checks for every push and pull
 
 ## Next Evaluation Steps
 
-1. Add `get_claim_frequency_trend` and create frequency-specific routing and calculation cases.
+1. Done: `get_claim_frequency_trend` and its frequency-specific routing and calculation cases.
 2. Add a year-over-year increase threshold evaluation, including the 20% frequency-increase scenario.
-3. Add exposure-summary and portfolio-quality tools with independent metric tests.
+3. Done: severity, exposure-summary, and portfolio-quality tools with independent metric tests.
 4. Add a generic response-builder registry and evaluate multi-tool response handling.
 5. Record per-run latency and provider-fallback telemetry without exposing credentials or sensitive data.
 6. Add a second provider adapter and run the same provider-boundary control suite.

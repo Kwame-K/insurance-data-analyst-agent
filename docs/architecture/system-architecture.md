@@ -47,6 +47,10 @@ flowchart TD
 
     L --> M[ToolRegistry]
     M --> N[get_loss_ratio_by_segment]
+    M --> N_freq[get_claim_frequency_trend]
+    M --> N_sev[get_claim_severity]
+    M --> N_exp[get_exposure_summary]
+    M --> N_pq[get_portfolio_quality_metrics]
     N --> O[SQL Query PostgreSQL or SQLite and Python Calculation]
     O --> P[AnalyticsResponse]
 
@@ -88,6 +92,11 @@ The route to a tool is controlled before calculation begins. The LLM may propose
 | `tools/base.py` | Defines the base tool contract used by the registry | No |
 | `tools/registry.py` | Maintains the allow-list of analytical tools and executes registered handlers | No |
 | `tools/loss_ratio.py` | Implements the paid loss-ratio calculation with fixed SQL and bound parameters | No |
+| `tools/segment_query.py` | Maps validated dimensions and filters to allow-listed SQL fragments with bound parameters, shared by the cohort tools | No |
+| `tools/severity.py` | Implements average paid severity per claim by underwriting year | No |
+| `tools/exposure_summary.py` | Implements the exposure summary (policy count, exposure units, written premium) | No |
+| `tools/portfolio_quality.py` | Implements the combined portfolio quality metrics on a cohort basis | No |
+| `tools/claim_frequency.py` | Implements the claim-frequency trend (claims per exposure unit, year-over-year change) with fixed SQL and bound parameters | No |
 | `charts.py` | Generates approved chart types from results and chart metadata | No |
 | `llm/base.py` | Defines the provider-agnostic `LLMClient` protocol | No |
 | `llm/fake.py` | Provides deterministic LLM behavior for tests | No |
@@ -302,10 +311,11 @@ coverage threshold
 
 ## Extensibility
 
-### Planned V1.1 tools
+### V1.1 tools (implemented)
 
 ```text
 get_claim_frequency_trend
+get_claim_severity
 get_exposure_summary
 get_portfolio_quality_metrics
 ```
@@ -345,7 +355,7 @@ The CLI and the REST API already share the same `InsuranceDataAnalystAgent`. The
 
 ## Improvements and Next Steps
 
-1. Implement the V1.1 tools (`get_claim_frequency_trend`, `get_exposure_summary`, `get_portfolio_quality_metrics`) following the documented extensibility checklist.
+1. Add further tools (earned-premium and incurred-loss bases) following the documented extensibility checklist.
 2. Instrument `agent.answer()` with tracing to capture router mode, fallback events, and latency per execution.
 3. Store audit records in PostgreSQL, keyed by `correlation_id`, for cross-project analytics.
 4. Expose the agent through MCP so the Underwriting Agent can call it as a tool.
